@@ -2,6 +2,12 @@ import customtkinter as ck
 from PIL import Image
 import signup
 import home
+import sqlite3
+from tkinter import messagebox
+import hashlib
+
+conn = sqlite3.connect('std_manage.db')
+cursor = conn.cursor()
 
 
 def sign_up(app):
@@ -9,9 +15,34 @@ def sign_up(app):
     signup.signup()
 
 
-def change_to_home(app):
+def change_to_home(app, user_id):
     app.destroy()
-    home.home()
+    home.home(user_id)
+
+
+def signin(username_en, password_en, app):
+    username = username_en.get()
+    password = password_en.get()
+
+    if username != '' and password != '':
+        try:
+            hashed_password = hashlib.sha256(password.encode()).hexdigest()
+            cursor.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username, hashed_password))
+            user = cursor.fetchone()
+            user_id = user[0]
+
+            if user is not None:  # Check if user exists
+                messagebox.showinfo('Success', f'Welcome! {user[1]}')
+                change_to_home(app, user_id)
+            else:
+                messagebox.showerror('Error', 'Invalid username or password.')
+
+        except Exception as e:
+            print(e)  # Print any exception for debugging
+            messagebox.showerror('Error', 'Login Unsuccessful')
+
+    else:
+        messagebox.showerror('Error', 'Username and Password cannot be empty.')
 
 
 def login():
@@ -53,7 +84,8 @@ def login():
     password_lb.place(x=40, y=150)
     password_en = ck.CTkEntry(master=frame3, )
     password_en.place(x=125, y=150)
-    login_btn = ck.CTkButton(master=frame3, text='Login', font=font3, command=lambda: change_to_home(app))
+    login_btn = ck.CTkButton(master=frame3, text='Login', font=font3,
+                             command=lambda: signin(username_en, password_en, app))
     login_btn.place(x=90, y=200)
     signup_txt = ck.CTkLabel(master=frame3, text='I don\'t have account', font=font3)
     signup_txt.place(x=40, y=250)

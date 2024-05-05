@@ -1,9 +1,37 @@
 import customtkinter as ck
 from PIL import Image
+import sqlite3
+from tkinter import messagebox
+import hashlib
+import login
+
+conn = sqlite3.connect('std_manage.db')
+cursor = conn.cursor()
 
 
 def log_in(app):
     app.destroy()
+    login.login()
+
+
+def register(username_en, password_en, app):
+    username = username_en.get()
+    password = password_en.get()
+    role = 'user'
+
+    if username != '' and password != '':
+        cursor.execute('SELECT username FROM users WHERE username=?', [username])
+        if cursor.fetchone() is not None:
+            messagebox.showerror('Error', 'Username already exists.')
+        else:
+            hashed_password = hashlib.sha256(password.encode()).hexdigest()
+            # Specify column names in the INSERT statement
+            cursor.execute('INSERT INTO users (username, password, role) VALUES (?, ?, ?)', [username, hashed_password, role])
+            conn.commit()
+            messagebox.showinfo('Success', 'Account has been created')
+            log_in(app)
+    else:
+        messagebox.showerror('Error', 'Username and Password cannot be empty.')
 
 
 def signup():
@@ -45,7 +73,8 @@ def signup():
     password_lb.place(x=40, y=150)
     password_en = ck.CTkEntry(master=frame3, )
     password_en.place(x=125, y=150)
-    login_btn = ck.CTkButton(master=frame3, text='SignUp', font=font3)
+    login_btn = ck.CTkButton(master=frame3, text='SignUp', font=font3,
+                             command=lambda: register(username_en, password_en, app))
     login_btn.place(x=90, y=200)
     signup_txt = ck.CTkLabel(master=frame3, text='I already registerd', font=font3)
     signup_txt.place(x=60, y=250)
