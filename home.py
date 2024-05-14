@@ -53,6 +53,62 @@ def home(user_id):
         except ValueError:
             messagebox.showerror('Error', 'Please enter valid numeric values for Age, Midterm, Final, and GPA')
 
+    def update_student():
+        selected_item = tree.selection()
+        if not selected_item:
+            messagebox.showerror('Error', 'Please select a student to update.')
+            return
+
+        try:
+            st_id = s_id.get()
+            name = name_entry.get()
+            gender = gender_entry.get()
+            age = int(age_entry.get())
+            midterm = int(mid_entry.get())
+            final = int(final_entry.get())
+            gpa = float(gpa_entry.get())
+
+            cursor.execute('UPDATE students SET name=?, gender=?, age=?, midterm=?, final=?, gpa=? WHERE id=?',
+                           (name, gender, age, midterm, final, gpa, selected_item[0]))
+            conn.commit()
+            messagebox.showinfo('Success', 'Student information updated successfully')
+            display_student()
+            clear_fields()
+
+        except ValueError:
+            messagebox.showerror('Error', 'Please enter valid numeric values for Age, Midterm, Final, and GPA')
+
+    def delete_student():
+        selected_item = tree.selection()
+        if not selected_item:
+            messagebox.showerror('Error', 'Please select a student to delete.')
+            return
+
+        confirmed = messagebox.askyesno('Confirm Deletion', 'Are you sure you want to delete this student?')
+        if confirmed:
+            cursor.execute('DELETE FROM students WHERE id=?', (selected_item[0],))
+            conn.commit()
+            messagebox.showinfo('Success', 'Student deleted successfully')
+            display_student()
+
+    def search_student():
+        student_id = search_entry.get()
+        if not student_id:
+            messagebox.showerror('Error', 'Please enter a Student ID to search.')
+            return
+
+        cursor.execute('SELECT * FROM students WHERE id=?', (student_id,))
+        student = cursor.fetchone()
+
+        if student:
+            # Clear existing data in the Treeview
+            tree.delete(*tree.get_children())
+            # Insert the found student record into the Treeview
+            tree.insert('', 'end', text=student[0],
+                        values=(student[1], student[2], student[3], student[4], student[5], student[6], student[7]))
+        else:
+            messagebox.showinfo('Not Found', f'Student with ID {student_id} not found.')
+
     def clear_fields():
         s_id.delete(0, 'end')
         name_entry.delete(0, 'end')
@@ -61,7 +117,6 @@ def home(user_id):
         mid_entry.delete(0, 'end')
         final_entry.delete(0, 'end')
         gpa_entry.delete(0, 'end')
-
 
     def display_student():
         # Retrieve student records based on user role
@@ -81,7 +136,7 @@ def home(user_id):
         tree.pack(expand=True, fill='both')
 
     app = ck.CTk()
-    height = 500
+    height = 600
     width = 900
     x = (app.winfo_screenwidth() / 2) - (width / 2)
     y = (app.winfo_screenheight() / 2) - (height / 2)
@@ -99,6 +154,10 @@ def home(user_id):
     frame1.pack(side="left", fill="y")
     frame2 = ck.CTkFrame(master=app)
     frame2.pack(side="left", fill="both", expand="True")
+    frame3 = ck.CTkFrame(master=frame2, height=50, fg_color="#1e71b3", corner_radius=0)
+    frame3.pack(side="top", fill="x")
+    frame4 = ck.CTkFrame(master=frame2)
+    frame4.pack(side="top", fill="both", expand="True")
 
     topic = ck.CTkLabel(master=frame1, text='Students', font=font1)
     topic.place(x=50, y=20)
@@ -116,16 +175,33 @@ def home(user_id):
     final_entry.place(x=20, y=270)
     gpa_entry = ck.CTkEntry(master=frame1, placeholder_text='GPA', width=160)
     gpa_entry.place(x=20, y=310)
+
     enter_btn = ck.CTkButton(master=frame1, text='Enter', font=font3, fg_color="white", text_color="#1e71b3",
                              command=lambda: enter_button())
     enter_btn.place(x=30, y=360)
+
+    update_btn = ck.CTkButton(master=frame1, text='Update', font=font3, fg_color="white", text_color="#1e71b3",
+                              command=update_student)
+    update_btn.place(x=30, y=400)
+
+    delete_btn = ck.CTkButton(master=frame1, text='Delete', font=font3, fg_color="white", text_color="#1e71b3",
+                              command=delete_student)
+    delete_btn.place(x=30, y=440)
+
     logout_btn = ck.CTkButton(master=frame1, text='Logout', font=font3, text_color="white", border_color="white",
                               border_width=1,
                               command=lambda: logout(app))
-    logout_btn.place(x=30, y=400)
+    logout_btn.place(x=30, y=480)
+
+    search_entry = ck.CTkEntry(master=frame3, placeholder_text='Student Id', width=300)
+    search_entry.place(x=180, y=10)
+
+    search_btn = ck.CTkButton(master=frame3, text='Search', font=font3, fg_color="white", text_color="#1e71b3",
+                              command=search_student)
+    search_btn.place(x=500, y=10)
 
     # Create a Treeview widget
-    tree = ttk.Treeview(frame2, columns=('Name', 'Gender', 'Age', 'Mid', 'Final', 'GPA'))
+    tree = ttk.Treeview(frame4, columns=('Name', 'Gender', 'Age', 'Mid', 'Final', 'GPA'))
     tree.column('#0', width=100)
     tree.column('Name', width=150)
     tree.column('Gender', width=100)
